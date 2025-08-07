@@ -11,9 +11,12 @@ import Linkerd from "../src/pages/linkerd"
 import Cilium from "../src/pages/Cilium";
 import Footer from "./Componets/Footer/Footer";
 import Prometheus from "./pages/Performance/Prometheus";
+import Grafana from "./pages/Performance/Grafana";
 import { disableBodyScroll } from 'body-scroll-lock';
 import Authentication from "./pages/Auth/Authentication";
 import ServiceMeshHealth from "./pages/ServiceMeshHealth";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -41,12 +44,26 @@ function App() {
         <Route path="/cilium" element={ <Cilium />} />
         <Route path="/linkerd" element={ <Linkerd />} />
         <Route path="/prometheus" element={ <Prometheus />} />
-        <Route path="/grafana" element={<Prometheus />} />
+        <Route path="/grafana" element={<Grafana />} />
         <Route path="/service-mesh-health" element={<ServiceMeshHealth />} />
         <Route path="/settings" element={<Settings /> } />
       </Routes >
       <Footer /> 
     </BrowserRouter >
+    
+    {/* Centralized Toast Container */}
+    <ToastContainer
+      position="top-right"
+      autoClose={3000}
+      hideProgressBar={false}
+      newestOnTop={false}
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      theme="colored"
+    />
     </>
   );
 }
