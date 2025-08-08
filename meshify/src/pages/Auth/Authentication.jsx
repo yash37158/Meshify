@@ -1,20 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../../Componets/Header/Header';
 import Footer from '../../Componets/Footer/Footer';
 import logo from "../../assets/logo.svg";
-import { FaChevronDown, FaGithub, FaShieldAlt, FaRocket } from 'react-icons/fa';
+import { FaChevronDown, FaGithub, FaShieldAlt, FaRocket, FaSpinner } from 'react-icons/fa';
 import { SiKubernetes } from 'react-icons/si';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
-export default function Authentication() {
+export default function Authentication({ onLogin }) {
   const [selectedProvider, setSelectedProvider] = useState('Meshify');
   const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [searchParams] = useSearchParams();
   const providers = ['Meshify', 'None'];
+
+  useEffect(() => {
+    // Handle OAuth callback results
+    const error = searchParams.get('error');
+    const auth = searchParams.get('auth');
+    const user = searchParams.get('user');
+
+    if (error) {
+      const errorMessages = {
+        'invalid_state': 'Authentication failed: Invalid state',
+        'no_code': 'Authentication failed: No authorization code',
+        'token_exchange': 'Authentication failed: Token exchange error',
+        'user_info': 'Authentication failed: Could not retrieve user info',
+        'decode_user': 'Authentication failed: User data error'
+      };
+      toast.error(errorMessages[error] || 'Authentication failed');
+      setLoading(false);
+    }
+
+    if (auth === 'success' && user) {
+      toast.success(`Welcome ${user}! Authentication successful.`);
+      if (onLogin) onLogin();
+      // Redirect to dashboard after successful auth
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1000);
+    }
+  }, [searchParams, onLogin]);
 
   const handleSelectProvider = (provider) => {
     if (provider === 'Meshify') {
+      setLoading(true);
+      toast.info('Redirecting to GitHub authentication...');
       window.location.href = 'http://localhost:8080/auth/github';
     } else {
-      window.location.href = 'http://localhost:3000/dashboard';
+      toast.info('Continuing without authentication...');
+      if (onLogin) onLogin();
+      window.location.href = '/dashboard';
     }
   };
 
@@ -96,6 +132,7 @@ export default function Authentication() {
                       role="button" 
                       className="btn btn-outline w-full justify-between"
                       onClick={handleToggleDropdown}
+                      disabled={loading}
                     >
                       <div className="flex items-center">
                         {selectedProvider === 'Meshify' && <FaGithub className="mr-2" />}
@@ -104,7 +141,7 @@ export default function Authentication() {
                       <FaChevronDown className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                     </div>
                     
-                    {isOpen && (
+                    {isOpen && !loading && (
                       <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-full mt-1">
                         {providers.map((provider, index) => (
                           <li key={index}>
@@ -113,7 +150,6 @@ export default function Authentication() {
                               onClick={() => {
                                 setSelectedProvider(provider);
                                 setIsOpen(false);
-                                handleSelectProvider(provider);
                               }}
                             >
                               {provider === 'Meshify' && <FaGithub className="mr-2" />}
@@ -150,10 +186,16 @@ export default function Authentication() {
                 {/* Action Button */}
                 <div className="card-actions justify-center mt-6">
                   <button 
-                    className={`btn btn-wide ${selectedProvider === 'Meshify' ? 'btn-primary' : 'btn-warning'}`}
+                    className={`btn btn-wide ${selectedProvider === 'Meshify' ? 'btn-primary' : 'btn-warning'} ${loading ? 'loading' : ''}`}
                     onClick={() => handleSelectProvider(selectedProvider)}
+                    disabled={loading}
                   >
-                    {selectedProvider === 'Meshify' ? (
+                    {loading ? (
+                      <>
+                        <FaSpinner className="mr-2 animate-spin" />
+                        Authenticating...
+                      </>
+                    ) : selectedProvider === 'Meshify' ? (
                       <>
                         <FaGithub className="mr-2" />
                         Continue with GitHub

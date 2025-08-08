@@ -18,7 +18,10 @@ import (
 	"strconv"
 	"runtime"
 	"sync"
+	"crypto/rand"
+	"encoding/base64"
 
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,6 +29,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/rest"
 	corev1 "k8s.io/api/core/v1"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/github"
 )
 
 // Istio-specific structures
@@ -2100,6 +2105,58 @@ func getRealMonitoringStats() (*MonitoringStats, error) {
 	return stats, nil
 }
 
+// OAuth configuration (MOVED OUTSIDE OF MAIN FUNCTION)
+var (
+	githubOAuthConfig *oauth2.Config
+	oauthStateString  = generateRandomState()
+)
+
+// Helper functions (MOVED OUTSIDE OF MAIN FUNCTION)
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func generateRandomState() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
+}
+
+func init() {
+	// Load environment variables from .env file
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using system environment variables")
+	}
+
+	// Debug: Print environment variables (remove in production)
+	clientID := os.Getenv("GITHUB_CLIENT_ID")
+	clientSecret := os.Getenv("GITHUB_CLIENT_SECRET")
+	
+	if clientID != "" {
+		log.Printf("GitHub Client ID loaded: %s", clientID[:min(len(clientID), 10)]+"...") // Show only first 10 chars for security
+	}
+	
+	if clientID == "" {
+		log.Println("Warning: GITHUB_CLIENT_ID environment variable not set - GitHub auth will not work")
+	}
+	if clientSecret == "" {
+		log.Println("Warning: GITHUB_CLIENT_SECRET environment variable not set - GitHub auth will not work")
+	}
+
+	if clientID != "" && clientSecret != "" {
+		githubOAuthConfig = &oauth2.Config{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			RedirectURL:  "http://localhost:8080/auth/github/callback",
+			Scopes:       []string{"user:email"},
+			Endpoint:     github.Endpoint,
+		}
+	}
+}
+
 func main() {
 	e := echo.New()
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
@@ -2354,7 +2411,7 @@ func main() {
 					"error": fmt.Sprintf("Failed to load Kubernetes configuration: %v", err),
 			})
 		}
-			}
+		}
 		
 		clientset, err := kubernetes.NewForConfig(config)
 			if err != nil {
@@ -2540,45 +2597,43 @@ func main() {
 
 	// Get Kubernetes cluster info for dashboard
 	e.GET("/api/kube/cluster", func(c echo.Context) error {
+		// Use short timeout to prevent hanging
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
 		config, err := rest.InClusterConfig()
 		if err != nil {
 			config, err = clientcmd.BuildConfigFromFlags("", os.Getenv("HOME")+"/.kube/config")
 			if err != nil {
-				return c.JSON(http.StatusInternalServerError, map[string]string{
-					"error": fmt.Sprintf("Failed to load Kubernetes configuration: %v", err),
+				return c.JSON(http.StatusOK, map[string]interface{}{
+					"status":  "disconnected",
+					"message": "Kubernetes config unavailable",
 				})
 			}
 		}
 
+		config.Timeout = 2 * time.Second
 		clientset, err := kubernetes.NewForConfig(config)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{
-				"error": fmt.Sprintf("Failed to create Kubernetes clientset: %v", err),
+			return c.JSON(http.StatusOK, map[string]interface{}{
+				"status":  "error",
+				"message": "Failed to create Kubernetes client",
 			})
 		}
 
-		// Get cluster info
-		version, err := clientset.Discovery().ServerVersion()
-		clusterName := "default"
-		isActive := "true"
-
+		// Quick connectivity test
+		_, err = clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{Limit: 1})
 		if err != nil {
-			isActive = "false"
+			return c.JSON(http.StatusOK, map[string]interface{}{
+				"status":  "disconnected",
+				"message": "Kubernetes API unreachable",
+			})
 		}
 
-		clusters := []map[string]interface{}{
-			{
-				"name":     clusterName,
-				"isactive": isActive,
-				"version":  version,
-			},
-		}
-
-		response := map[string]interface{}{
-			"clusters": clusters,
-		}
-
-		return c.JSON(http.StatusOK, response)
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"status":  "connected",
+			"message": "Kubernetes cluster accessible",
+		})
 	})
 
 	// === END DASHBOARD/KUBERNETES ROUTES ===
@@ -3670,8 +3725,272 @@ func main() {
 		})
 	})
 
+	// ... (rest of the code remains unchanged)
+
+	// Add GitHub OAuth routes at the end, before e.Start()
+	if githubOAuthConfig != nil {
+		// GitHub OAuth login
+		e.GET("/auth/github", func(c echo.Context) error {
+			url := githubOAuthConfig.AuthCodeURL(oauthStateString, oauth2.AccessTypeOffline)
+			return c.Redirect(http.StatusTemporaryRedirect, url)
+		})
+
+		// GitHub OAuth callback
+		e.GET("/auth/github/callback", func(c echo.Context) error {
+			state := c.QueryParam("state")
+			if state != oauthStateString {
+				log.Printf("Invalid OAuth state: expected %s, got %s", oauthStateString, state)
+				return c.Redirect(http.StatusTemporaryRedirect, "http://localhost:3000/provider?error=invalid_state")
+			}
+
+			code := c.QueryParam("code")
+			if code == "" {
+				log.Println("No code in OAuth callback")
+				return c.Redirect(http.StatusTemporaryRedirect, "http://localhost:3000/provider?error=no_code")
+			}
+
+			token, err := githubOAuthConfig.Exchange(context.Background(), code)
+			if err != nil {
+				log.Printf("Failed to exchange token: %v", err)
+				return c.Redirect(http.StatusTemporaryRedirect, "http://localhost:3000/provider?error=token_exchange")
+			}
+
+			// Get user info from GitHub
+			client := githubOAuthConfig.Client(context.Background(), token)
+			resp, err := client.Get("https://api.github.com/user")
+			if err != nil {
+				log.Printf("Failed to get user info: %v", err)
+				return c.Redirect(http.StatusTemporaryRedirect, "http://localhost:3000/provider?error=user_info")
+			}
+			defer resp.Body.Close()
+
+			var user map[string]interface{}
+			if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+				log.Printf("Failed to decode user info: %v", err)
+				return c.Redirect(http.StatusTemporaryRedirect, "http://localhost:3000/provider?error=decode_user")
+			}
+
+			log.Printf("GitHub OAuth successful for user: %v", user["login"])
+			
+			// Redirect to dashboard with success
+			return c.Redirect(http.StatusTemporaryRedirect, "http://localhost:3000/dashboard?auth=success&user="+fmt.Sprintf("%v", user["login"]))
+		})
+	}
+
+	// Add these endpoints inside your main() function, before the GitHub OAuth routes
+
+	// === MISSING ADAPTER ENDPOINTS ===
+
+	// Get service mesh adapters
+	e.GET("/api/adapters", func(c echo.Context) error {
+		adapters := map[string]interface{}{
+			"istio": map[string]interface{}{
+				"name":        "Istio",
+				"version":     "1.19.0",
+				"status":      "available",
+				"description": "Connect, secure, control, and observe services",
+				"icon":        "istio",
+			},
+			"linkerd": map[string]interface{}{
+				"name":        "Linkerd",
+				"version":     "2.14.0",
+				"status":      "available", 
+				"description": "Ultralight service mesh for Kubernetes",
+				"icon":        "linkerd",
+			},
+			"cilium": map[string]interface{}{
+				"name":        "Cilium",
+				"version":     "1.14.0",
+				"status":      "available",
+				"description": "eBPF-based networking, observability, and security",
+				"icon":        "cilium",
+			},
+		}
+		
+		return c.JSON(http.StatusOK, adapters)
+	})
+
+	// Get Istio adapters specifically
+	e.GET("/api/istio/adapters", func(c echo.Context) error {
+		adapters := []map[string]interface{}{
+			{
+				"name":        "prometheus",
+				"status":      "enabled",
+				"description": "Metrics collection",
+			},
+			{
+				"name":        "grafana",
+				"status":      "available",
+				"description": "Metrics visualization",
+			},
+			{
+				"name":        "jaeger",
+				"status":      "available", 
+				"description": "Distributed tracing",
+			},
+			{
+				"name":        "kiali",
+				"status":      "available",
+				"description": "Service mesh observability",
+			},
+		}
+		
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"adapters": adapters,
+			"count":    len(adapters),
+		})
+	})
+
+	// === MISSING LINKERD APPLICATION ENDPOINTS ===
+
+	// Get Linkerd application status (emojivoto)
+	e.GET("/api/linkerd/applications/default/emojivoto/status", func(c echo.Context) error {
+		// Check if emojivoto is deployed
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			config, err = clientcmd.BuildConfigFromFlags("", os.Getenv("HOME")+"/.kube/config")
+			if err != nil {
+				return c.JSON(http.StatusOK, map[string]interface{}{
+					"deployed": false,
+					"message":  "Kubernetes configuration unavailable",
+				})
+			}
+		}
+
+		// Set timeout to prevent hanging
+		config.Timeout = 3 * time.Second
+
+		clientset, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			return c.JSON(http.StatusOK, map[string]interface{}{
+				"deployed": false,
+				"message":  "Failed to connect to Kubernetes",
+			})
+		}
+
+		// Check for emojivoto deployments with timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		deployments, err := clientset.AppsV1().Deployments("default").List(ctx, metav1.ListOptions{
+			LabelSelector: "app=emojivoto",
+		})
+		
+		if err != nil {
+			return c.JSON(http.StatusOK, map[string]interface{}{
+				"deployed": false,
+				"message":  "Failed to check emojivoto status",
+				"error":    err.Error(),
+			})
+		}
+
+		if len(deployments.Items) == 0 {
+			return c.JSON(http.StatusOK, map[string]interface{}{
+				"deployed": false,
+				"message":  "Emojivoto application not found",
+			})
+		}
+
+		// Count ready replicas
+		totalReplicas := int32(0)
+		readyReplicas := int32(0)
+		
+		for _, deployment := range deployments.Items {
+			totalReplicas += *deployment.Spec.Replicas
+			readyReplicas += deployment.Status.ReadyReplicas
+		}
+
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"deployed":       true,
+			"name":           "emojivoto",
+			"namespace":      "default",
+			"deployments":    len(deployments.Items),
+			"totalReplicas":  totalReplicas,
+			"readyReplicas":  readyReplicas,
+			"status":         map[string]interface{}{
+				"phase": func() string {
+					if readyReplicas == totalReplicas {
+						return "Running"
+					}
+					return "Pending"
+				}(),
+			},
+		})
+	})
+
+	// Deploy emojivoto application
+	e.POST("/api/linkerd/applications/emojivoto/deploy", func(c echo.Context) error {
+		log.Println("Deploying emojivoto application...")
+		
+		// Download emojivoto manifest
+		emojiVotoURL := "https://run.linkerd.io/emojivoto.yml"
+		resp, err := http.Get(emojiVotoURL)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+				"success": false,
+				"error":   "Failed to download emojivoto manifest",
+			})
+		}
+		defer resp.Body.Close()
+
+		// Create temporary file
+		tmpFile, err := ioutil.TempFile("", "emojivoto-*.yaml")
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+				"success": false,
+				"error":   "Failed to create temporary file",
+			})
+		}
+		defer os.Remove(tmpFile.Name())
+
+		// Write manifest to file
+		_, err = io.Copy(tmpFile, resp.Body)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+				"success": false,
+				"error":   "Failed to write manifest file",
+			})
+		}
+		tmpFile.Close()
+
+		// Deploy using kubectl
+		cmd := exec.Command("kubectl", "apply", "-f", tmpFile.Name())
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+				"success": false,
+				"error":   fmt.Sprintf("Failed to deploy emojivoto: %s", string(output)),
+			})
+		}
+
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"success": true,
+			"message": "Emojivoto application deployed successfully",
+			"output":  string(output),
+		})
+	})
+
+	// === ADDITIONAL MISSING ENDPOINTS ===
+
+	// Get all Linkerd applications
+	e.GET("/api/linkerd/applications", func(c echo.Context) error {
+		applications := []map[string]interface{}{
+			{
+				"name":        "emojivoto",
+				"namespace":   "default",
+				"description": "Sample microservices application",
+				"status":      "available",
+			},
+		}
+		
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"applications": applications,
+			"count":        len(applications),
+		})
+	})
+
 	if err := e.Start(":8080"); err != nil {
-		panic(err)
+		log.Fatal("Server failed to start:", err)
 	}
 }
 

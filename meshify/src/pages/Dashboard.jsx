@@ -9,7 +9,7 @@ import { RotateSpinner } from 'react-spinners-kit';
 import { MdWarningAmber } from 'react-icons/md';
 
 export default function Dashboard() {
-  const [workloads, setWorkloads] = useState([]);
+  const [workloads, setWorkloads] = useState({});
   const [error, setError] = useState(null);
   const [clusters, setClusters] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -19,7 +19,7 @@ export default function Dashboard() {
       try {
         setLoading(true);
         const response = await axios.get('http://localhost:8080/api/kube/workloads');
-        setWorkloads(response.data);
+        setWorkloads(response.data || {});
         setLoading(false);
       } catch (error) {
         setLoading(false);
@@ -35,10 +35,11 @@ export default function Dashboard() {
       try {
         setLoading(true);
         const response = await axios.get('http://localhost:8080/api/kube/cluster');
-        setClusters(response.data.clusters);
+        setClusters(response.data?.clusters || []);
         setLoading(false);
       } catch (error) {
-        setLoading(true);
+        setLoading(false);
+        setClusters([]);
         console.error(error);
       }
     }
@@ -119,7 +120,7 @@ export default function Dashboard() {
           <div className="bg-base-100 shadow-md rounded-lg p-6 border border-base-300">
             <h3 className="text-xl font-semibold mb-4 text-base-content">Connection Status</h3>
             <div className="space-y-3">
-              {clusters.length > 0 ? (
+              {Array.isArray(clusters) && clusters.length > 0 ? (
                 clusters.map((cluster) => (
                   <div
                     key={cluster.name}
@@ -153,7 +154,7 @@ export default function Dashboard() {
           <div className="xl:col-span-2 bg-base-100 shadow-md rounded-lg p-6 border border-base-300">
             <h3 className="text-xl font-semibold mb-4 text-base-content">Service Mesh Adapters</h3>
             <div className="max-h-60 overflow-y-auto">
-              {workloads.serviceNames && workloads.serviceNames.length > 0 ? (
+              {Array.isArray(workloads.serviceNames) && workloads.serviceNames.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {workloads.serviceNames.map((serviceName, index) => (
                     <div key={index} className="p-3 bg-primary/10 rounded-lg border border-primary/30">
@@ -193,6 +194,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      <Footer />
     </NavigationDrawer>
   );
 }

@@ -1,9 +1,9 @@
 import Home from "./pages/Dashboard";
 import React from "react";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from "./Componets/Header/Header";
 import NavigationDrawer from "./Componets/NavDrawer/NavigationDrawer";
-import { BrowserRouter, Routes, Route, Navigate} from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams} from "react-router-dom";
 import Dashboard from "../src/pages/Dashboard"
 import Settings from "./pages/Settings";
 import Istio from "../src/pages/Istio";
@@ -20,8 +20,31 @@ import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  useEffect(() => {
+    // Check if user is already authenticated (from URL params or localStorage)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('auth') === 'success') {
+      setIsAuthenticated(true);
+      // Store auth state
+      localStorage.setItem('meshify_authenticated', 'true');
+    } else {
+      // Check localStorage for existing auth
+      const stored = localStorage.getItem('meshify_authenticated');
+      if (stored === 'true') {
+        setIsAuthenticated(true);
+      }
+    }
+  }, []);
+
   const handleLogin = () => {
     setIsAuthenticated(true);
+    localStorage.setItem('meshify_authenticated', 'true');
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('meshify_authenticated');
   };
 
   return (
@@ -30,7 +53,7 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={isAuthenticated ? <Dashboard /> : <Navigate to="/provider" />}
+          element={isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/provider" />}
           />
         <Route
           path="/provider"

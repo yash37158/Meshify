@@ -60,9 +60,10 @@ export default function Settings() {
     try {
       setLoading(true);
       const response = await axios.get('http://localhost:8080/api/kube/cluster');
-      setClusters(response.data.clusters);
+      setClusters(response.data?.clusters || []);
     } catch (error) {
       console.error('Error fetching clusters:', error);
+      setClusters([]);
       toast.error('Failed to fetch cluster information');
     } finally {
       setLoading(false);
@@ -205,7 +206,7 @@ export default function Settings() {
                     </tr>
                   </thead>
                   <tbody>
-                    {clusters.map(cluster => (
+                    {Array.isArray(clusters) && clusters.map(cluster => (
                       <tr key={cluster.name}>
                         <td className="text-base-content font-medium">{cluster.name}</td>
                         <td className="text-base-content/70">{cluster.server}</td>
