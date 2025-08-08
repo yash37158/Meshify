@@ -2350,14 +2350,14 @@ func main() {
 			if err != nil {
 			config, err = clientcmd.BuildConfigFromFlags("", os.Getenv("HOME")+"/.kube/config")
 			if err != nil {
-				return c.JSON(http.StatusInternalServerError, map[string]string{
+			return c.JSON(http.StatusInternalServerError, map[string]string{
 					"error": fmt.Sprintf("Failed to load Kubernetes configuration: %v", err),
-				})
+			})
+		}
 			}
-			}
-
+		
 		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
+			if err != nil {
 				return c.JSON(http.StatusInternalServerError, map[string]string{
 				"error": fmt.Sprintf("Failed to create Kubernetes clientset: %v", err),
 			})
@@ -2374,7 +2374,7 @@ func main() {
 		// Get pods in emojivoto namespace
 		podList, err := clientset.CoreV1().Pods("emojivoto").List(context.Background(), metav1.ListOptions{})
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{
+				return c.JSON(http.StatusInternalServerError, map[string]string{
 				"error": fmt.Sprintf("Failed to get pods: %v", err),
 			})
 		}
@@ -2452,7 +2452,7 @@ func main() {
 		if err != nil {
 			config, err = clientcmd.BuildConfigFromFlags("", os.Getenv("HOME")+"/.kube/config")
 			if err != nil {
-				return c.JSON(http.StatusInternalServerError, map[string]string{
+			return c.JSON(http.StatusInternalServerError, map[string]string{
 					"error": fmt.Sprintf("Failed to load Kubernetes configuration: %v", err),
 				})
 			}
@@ -3401,7 +3401,7 @@ func main() {
 				"error": "Failed to get Istio status",
 			})
 		}
-		
+
 		return c.JSON(http.StatusOK, status)
 	})
 

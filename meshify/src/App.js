@@ -48,7 +48,6 @@ function App() {
         <Route path="/service-mesh-health" element={<ServiceMeshHealth />} />
         <Route path="/settings" element={<Settings /> } />
       </Routes >
-      <Footer /> 
     </BrowserRouter >
     
     {/* Centralized Toast Container */}

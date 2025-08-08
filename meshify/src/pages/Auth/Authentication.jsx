@@ -1,90 +1,185 @@
-import React from 'react'
-import Header from '../../Componets/Header/Header'
-import Footer from '../../Componets/Footer/Footer'
-import logo from "../../assets/logo.svg"
-import { useState } from 'react';
-import { FaChevronDown } from 'react-icons/fa';
-
-
+import React, { useState } from 'react';
+import Header from '../../Componets/Header/Header';
+import Footer from '../../Componets/Footer/Footer';
+import logo from "../../assets/logo.svg";
+import { FaChevronDown, FaGithub, FaShieldAlt, FaRocket } from 'react-icons/fa';
+import { SiKubernetes } from 'react-icons/si';
 
 export default function Authentication() {
-    const [selectedProvider, setSelectedProvider] = useState('Meshify');
-    const [isOpen, setIsOpen] = useState(false);
-    const providers = ['Meshify', 'None'];
-  
-    const handleSelectProvider = (provider) => {
-        if (provider === 'Meshify') {
-            window.location.href = 'http://localhost:8080/auth/github';
-          } else {
-            window.location.href = 'http://localhost:3000/dashboard';
-          }
-    };
+  const [selectedProvider, setSelectedProvider] = useState('Meshify');
+  const [isOpen, setIsOpen] = useState(false);
+  const providers = ['Meshify', 'None'];
 
-    const handleToggleDropdown = () => {
-        setIsOpen(!isOpen);
-      };
+  const handleSelectProvider = (provider) => {
+    if (provider === 'Meshify') {
+      window.location.href = 'http://localhost:8080/auth/github';
+    } else {
+      window.location.href = 'http://localhost:3000/dashboard';
+    }
+  };
+
+  const handleToggleDropdown = () => {
+    setIsOpen(!isOpen);
+  };
+
   return (
-    <>
-        <div class="containe bg-blue-50 flex flex-wrap p-4 flex-col md:flex-row">
-        <a class="flex title-font font-medium items-center text-gray-900 mb-4 md:mb-0">
-        <div>
-        <img src={logo} alt="Meshify-logo" class="w-fit h-14 text-white p-2  rounded-full" viewBox="0 0 24 24">
-      </img>
-        </div>
-      <span class="ml-3 text-2xl text-[#214DBE]">Meshify</span>
-      <span class="text-xl ml-3 italic text-[#214DBE] opacity-80">Provider</span>
-    </a>
-    </div>
-    <div className="flex flex-col h-[600px] m-80 p-10 mt-10 rounded-md shadow-md bg-[#E8EFF6]">
-    <div className="flex items-center justify-center ">
-    <div className="max-w-sm h-[500px] w-[500px] rounded-md overflow-hidden shadow-lg bg-[#ffff]">
-    <img src={logo} class="mx-auto w-32 h-48" alt="Logo" />
-    <div className="">
-      <div className="font-bold text-xl mb-2 text-center text-[#214DBE]">Meshify</div>
-    </div>
-    <div className="px-6 py-4">
-      <div className="font-semibold text-xl mb-2 text-center text-[#214DBE]">Choose a Provider to continue</div>
-    </div>
-    <div className="flex justify-center">
-      <div className="relative inline-block text-left">
-        <div>
-          <button
-            type="button"
-            className="inline-flex justify-between w-[300px]  rounded-md border border-gray-400 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500"
-            id="options-menu"
-            aria-controls="options-menu"
-            aria-expanded={isOpen}
-            aria-haspopup="true"
-            onClick={handleToggleDropdown}
-          >
-            {selectedProvider}
-            <FaChevronDown className={`ml-2 h-4 w-4 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} />
-          </button>
-        </div>
-
-        {isOpen && (
-          <div className="origin-top-right absolute w-[300px] right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-            {providers.map((provider, index) => (
-              <div key={index} className="py-1">
-                <button
-                  type="button"
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                  role="menuitem"
-                  onClick={() => handleSelectProvider(provider)}
-                >
-                  {provider}
-                </button>
-              </div>
-            ))}
+    <div className="min-h-screen bg-base-200">
+      {/* Header */}
+      <div className="navbar bg-base-100 shadow-sm">
+        <div className="flex-1">
+          <div className="flex items-center">
+            <img src={logo} alt="Meshify-logo" className="w-10 h-10 mr-3" />
+            <div className="flex flex-col">
+              <span className="text-xl font-bold text-primary">Meshify</span>
+              <span className="text-sm text-base-content/60">Provider</span>
+            </div>
           </div>
-        )}
+        </div>
       </div>
-    </div>
-    </div>
-    </div>
-    </div>
-    <Footer />
-    </>
 
-  )
+      {/* Main Content */}
+      <div className="hero min-h-[calc(100vh-200px)] bg-base-200">
+        <div className="hero-content text-center">
+          <div className="max-w-2xl">
+            {/* Logo and Title */}
+            <div className="mb-8">
+              <img src={logo} className="w-24 h-24 mx-auto mb-4" alt="Meshify Logo" />
+              <h1 className="text-5xl font-bold text-primary mb-2">Meshify</h1>
+              <p className="text-lg text-base-content/70">
+                Kubernetes Service Mesh Management Platform
+              </p>
+            </div>
+
+            {/* Features Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="card bg-base-100 shadow-md">
+                <div className="card-body items-center text-center p-6">
+                  <SiKubernetes className="text-4xl text-primary mb-2" />
+                  <h3 className="card-title text-base">Multi-Mesh Support</h3>
+                  <p className="text-sm text-base-content/70">Istio, Linkerd, Cilium</p>
+                </div>
+              </div>
+              
+              <div className="card bg-base-100 shadow-md">
+                <div className="card-body items-center text-center p-6">
+                  <FaShieldAlt className="text-4xl text-success mb-2" />
+                  <h3 className="card-title text-base">Secure Access</h3>
+                  <p className="text-sm text-base-content/70">OAuth & RBAC</p>
+                </div>
+              </div>
+              
+              <div className="card bg-base-100 shadow-md">
+                <div className="card-body items-center text-center p-6">
+                  <FaRocket className="text-4xl text-accent mb-2" />
+                  <h3 className="card-title text-base">Easy Deploy</h3>
+                  <p className="text-sm text-base-content/70">One-click setup</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Authentication Card */}
+            <div className="card bg-base-100 shadow-xl max-w-md mx-auto">
+              <div className="card-body">
+                <h2 className="card-title justify-center text-2xl mb-6">
+                  Choose Authentication Provider
+                </h2>
+                
+                {/* Provider Dropdown */}
+                <div className="form-control w-full">
+                  <label className="label">
+                    <span className="label-text font-medium">Authentication Provider</span>
+                  </label>
+                  
+                  <div className="dropdown dropdown-end w-full">
+                    <div 
+                      tabIndex={0} 
+                      role="button" 
+                      className="btn btn-outline w-full justify-between"
+                      onClick={handleToggleDropdown}
+                    >
+                      <div className="flex items-center">
+                        {selectedProvider === 'Meshify' && <FaGithub className="mr-2" />}
+                        {selectedProvider}
+                      </div>
+                      <FaChevronDown className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    </div>
+                    
+                    {isOpen && (
+                      <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-full mt-1">
+                        {providers.map((provider, index) => (
+                          <li key={index}>
+                            <button
+                              className="flex items-center"
+                              onClick={() => {
+                                setSelectedProvider(provider);
+                                setIsOpen(false);
+                                handleSelectProvider(provider);
+                              }}
+                            >
+                              {provider === 'Meshify' && <FaGithub className="mr-2" />}
+                              {provider}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+
+                {/* Provider Info */}
+                <div className="mt-6">
+                  {selectedProvider === 'Meshify' ? (
+                    <div className="alert alert-info">
+                      <FaGithub className="text-lg" />
+                      <div>
+                        <h3 className="font-bold">GitHub OAuth</h3>
+                        <div className="text-xs">Secure authentication via GitHub</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="alert alert-warning">
+                      <FaShieldAlt className="text-lg" />
+                      <div>
+                        <h3 className="font-bold">No Authentication</h3>
+                        <div className="text-xs">Direct access (not recommended for production)</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Button */}
+                <div className="card-actions justify-center mt-6">
+                  <button 
+                    className={`btn btn-wide ${selectedProvider === 'Meshify' ? 'btn-primary' : 'btn-warning'}`}
+                    onClick={() => handleSelectProvider(selectedProvider)}
+                  >
+                    {selectedProvider === 'Meshify' ? (
+                      <>
+                        <FaGithub className="mr-2" />
+                        Continue with GitHub
+                      </>
+                    ) : (
+                      <>
+                        <FaRocket className="mr-2" />
+                        Continue without Auth
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Text */}
+            <div className="mt-8 text-center">
+              <p className="text-sm text-base-content/60">
+                By continuing, you agree to our terms of service and privacy policy
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Footer />
+    </div>
+  );
 }

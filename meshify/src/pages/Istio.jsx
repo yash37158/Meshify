@@ -495,7 +495,7 @@ export default function Istio() {
 
   return (
     <NavigationDrawer>
-    <Header />
+      <Header />
       
       <div className="p-4 lg:p-6">
         {/* Loading Indicators */}
@@ -699,8 +699,8 @@ export default function Istio() {
                   disabled={deploymentLoading}
                 >
                   <FaPlus className="mr-2" />
-                  Deploy Bookinfo
-                </button>
+                      Deploy Bookinfo
+                    </button>
                 
                 {applications.bookinfo && (
                   <button 
@@ -772,7 +772,7 @@ export default function Istio() {
         </div>
 
         {/* Modals */}
-        
+
         {/* Deploy Bookinfo Modal */}
         {modalOpen && (
           <div className="modal modal-open">
@@ -787,7 +787,7 @@ export default function Istio() {
                   <p>This will deploy the Istio Bookinfo sample application to your Kubernetes cluster.</p>
                   <p className="text-sm mt-1">Make sure you have Istio installed and configured.</p>
         </div>
-      </div>
+              </div>
               
               <div className="form-control mb-6">
                 <label className="label cursor-pointer justify-start">
@@ -801,7 +801,7 @@ export default function Istio() {
                     I understand this will deploy resources to my Kubernetes cluster
                   </span>
                 </label>
-    </div>
+              </div>
               
               <div className="modal-action">
                 <button
@@ -824,26 +824,26 @@ export default function Istio() {
                   disabled={deploymentLoading}
                 >
                   Cancel
-              </button>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
         )}
 
         {/* Custom Configuration Modal */}
         {customConfigModal && (
-                      <Modal
+          <Modal
             isOpen={customConfigModal}
             onRequestClose={() => setCustomConfigModal(false)}
-                        contentLabel="Add Custom Configuration"
+            contentLabel="Add Custom Configuration"
             className="modal-box bg-base-100 max-w-4xl w-full mx-auto mt-20"
             overlayClassName="modal modal-open"
-                      >
-                        <div className="flex justify-between items-center mb-4">
+          >
+            <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-base-content">Deploy Custom Istio Configuration</h2>
               <button onClick={() => setCustomConfigModal(false)} className="btn btn-ghost btn-circle">
-                            <FaTimes />
-                          </button>
+                <FaTimes />
+              </button>
                         </div>
             
             <div className="mb-4">
@@ -853,16 +853,16 @@ export default function Istio() {
             </div>
             
             <div className="modal-body mb-6">
-                          <JSONInput
-                            id="jsonEditor"
-                            placeholder={jsonData}
-                            locale={locale}
-                            height="400px"
-                            width="100%"
-                            onChange={(value) => setJsonData(value.jsObject)}
+              <JSONInput
+                id="jsonEditor"
+                placeholder={jsonData}
+                locale={locale}
+                height="400px"
+                width="100%"
+                onChange={(value) => setJsonData(value.jsObject)}
                 theme="dark_vscode_tribute"
-                          />
-                        </div>
+              />
+            </div>
             
             <div className="modal-action">
               <button 
@@ -1032,7 +1032,7 @@ export default function Istio() {
               <pre className="text-sm whitespace-pre-wrap font-mono">
                 {podLogs || 'Loading logs...'}
               </pre>
-  </div>
+            </div>
           </Modal>
         )}
 
@@ -1080,8 +1080,8 @@ export default function Istio() {
             </div>
           </div>
         )}
-</div>
-    
+      </div>
+
     </NavigationDrawer>
   );
 }
