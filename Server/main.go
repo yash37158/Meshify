@@ -2509,21 +2509,61 @@ func main() {
 		if err != nil {
 			config, err = clientcmd.BuildConfigFromFlags("", os.Getenv("HOME")+"/.kube/config")
 			if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{
-					"error": fmt.Sprintf("Failed to load Kubernetes configuration: %v", err),
+				// Return empty data when no cluster is connected
+				return c.JSON(http.StatusOK, map[string]interface{}{
+					"numDaemonSets": 0,
+					"numDeployments": 0,
+					"numNodes": 0,
+					"numPods": 0,
+					"numServices": 0,
+					"numReplicationControllers": 0,
+					"numPodTemplates": 0,
+					"serviceNames": []string{},
+					"clusterConnected": false,
 				})
 			}
 		}
 
 		clientset, err := kubernetes.NewForConfig(config)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{
-				"error": fmt.Sprintf("Failed to create Kubernetes clientset: %v", err),
+			// Return empty data when client creation fails
+			return c.JSON(http.StatusOK, map[string]interface{}{
+				"numDaemonSets": 0,
+				"numDeployments": 0,
+				"numNodes": 0,
+				"numPods": 0,
+				"numServices": 0,
+				"numReplicationControllers": 0,
+				"numPodTemplates": 0,
+				"serviceNames": []string{},
+				"clusterConnected": false,
+			})
+		}
+
+		// Test cluster connectivity with timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		
+		_, err = clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{Limit: 1})
+		if err != nil {
+			// Return empty data when cluster is not reachable
+			return c.JSON(http.StatusOK, map[string]interface{}{
+				"numDaemonSets": 0,
+				"numDeployments": 0,
+				"numNodes": 0,
+				"numPods": 0,
+				"numServices": 0,
+				"numReplicationControllers": 0,
+				"numPodTemplates": 0,
+				"serviceNames": []string{},
+				"clusterConnected": false,
 			})
 		}
 
 		// Get workload counts
-		workloads := map[string]interface{}{}
+		workloads := map[string]interface{}{
+			"clusterConnected": true,
+		}
 
 		// Get DaemonSets
 		daemonSets, err := clientset.AppsV1().DaemonSets("").List(context.Background(), metav1.ListOptions{})

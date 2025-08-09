@@ -7,27 +7,29 @@ import Footer from '../Componets/Footer/Footer';
 import axios from 'axios';
 import { RotateSpinner } from 'react-spinners-kit';
 import { MdWarningAmber } from 'react-icons/md';
+import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [workloads, setWorkloads] = useState({});
   const [error, setError] = useState(null);
   const [clusters, setClusters] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get('http://localhost:8080/api/kube/workloads');
-        setWorkloads(response.data || {});
-        setLoading(false);
-      } catch (error) {
-        setLoading(false);
-        setError(error);
-      }
-    };
+  const fetchWorkloads = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('http://localhost:8080/api/kube/workloads');
+      setWorkloads(response.data || {});
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      setError(error);
+    }
+  };
 
-    fetchData();
+  useEffect(() => {
+    fetchWorkloads();
   }, []);
 
   useEffect(() => {
@@ -70,6 +72,14 @@ export default function Dashboard() {
     );
   }
 
+  const handlePrometheusClick = () => {
+    navigate('/prometheus');
+  };
+
+  const handleGrafanaClick = () => {
+    navigate('/grafana');
+  };
+
   return (
     <NavigationDrawer>
       <Header />
@@ -84,61 +94,72 @@ export default function Dashboard() {
           {/* Kubernetes Workloads - Full width on mobile, 2 cols on xl */}
           <div className="xl:col-span-2 bg-base-100 shadow-md rounded-lg p-6 border border-base-300">
             <h3 className="text-xl font-semibold mb-4 text-base-content">Kubernetes Workloads</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300">
-                <span className="font-medium text-base-content/70">DaemonSets:</span>
-                <span className="text-lg font-bold text-blue-600">{workloads.numDaemonSets || 0}</span>
+            {workloads.clusterConnected === false ? (
+              <div className="text-center py-8">
+                <div className="text-base-content/50 mb-4">No cluster connected</div>
+                <button 
+                  onClick={fetchWorkloads}
+                  className="btn btn-primary btn-sm"
+                  disabled={loading}
+                >
+                  {loading ? 'Refreshing...' : 'Refresh'}
+                </button>
               </div>
-              <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300">
-                <span className="font-medium text-base-content/70">Deployments:</span>
-                <span className="text-lg font-bold text-green-600">{workloads.numDeployments || 0}</span>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300">
+                  <span className="font-medium text-base-content/70">DaemonSets:</span>
+                  <span className="text-lg font-bold text-blue-600">{workloads.numDaemonSets || 0}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300">
+                  <span className="font-medium text-base-content/70">Deployments:</span>
+                  <span className="text-lg font-bold text-green-600">{workloads.numDeployments || 0}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300">
+                  <span className="font-medium text-base-content/70">Nodes:</span>
+                  <span className="text-lg font-bold text-purple-600">{workloads.numNodes || 0}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300">
+                  <span className="font-medium text-base-content/70">Pod Templates:</span>
+                  <span className="text-lg font-bold text-orange-600">{workloads.numPodTemplates || 0}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300">
+                  <span className="font-medium text-base-content/70">Replication Controllers:</span>
+                  <span className="text-lg font-bold text-red-600">{workloads.numReplicationControllers || 0}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300">
+                  <span className="font-medium text-base-content/70">Pods:</span>
+                  <span className="text-lg font-bold text-indigo-600">{workloads.numPods || 0}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300 md:col-span-2">
+                  <span className="font-medium text-base-content/70">Services:</span>
+                  <span className="text-lg font-bold text-teal-600">{workloads.numServices || 0}</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300">
-                <span className="font-medium text-base-content/70">Nodes:</span>
-                <span className="text-lg font-bold text-purple-600">{workloads.numNodes || 0}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300">
-                <span className="font-medium text-base-content/70">Pod Templates:</span>
-                <span className="text-lg font-bold text-orange-600">{workloads.numPodTemplates || 0}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300">
-                <span className="font-medium text-base-content/70">Replication Controllers:</span>
-                <span className="text-lg font-bold text-red-600">{workloads.numReplicationControllers || 0}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300">
-                <span className="font-medium text-base-content/70">Pods:</span>
-                <span className="text-lg font-bold text-indigo-600">{workloads.numPods || 0}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-base-200 rounded border border-base-300 md:col-span-2">
-                <span className="font-medium text-base-content/70">Services:</span>
-                <span className="text-lg font-bold text-teal-600">{workloads.numServices || 0}</span>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Right column - Connection Status */}
           <div className="bg-base-100 shadow-md rounded-lg p-6 border border-base-300">
             <h3 className="text-xl font-semibold mb-4 text-base-content">Connection Status</h3>
             <div className="space-y-3">
-              {Array.isArray(clusters) && clusters.length > 0 ? (
-                clusters.map((cluster) => (
-                  <div
-                    key={cluster.name}
-                    className={`flex items-center p-3 rounded-lg border ${
-                      cluster.isactive === 'true' 
-                        ? 'bg-success/10 text-success border-success/30' 
-                        : 'bg-base-200 text-base-content/50 border-base-300'
-                    }`}
-                  >
-                    <span className={`h-3 w-3 mr-3 rounded-full ${
-                      cluster.isactive === 'true' ? 'bg-success' : 'bg-base-content/30'
-                    }`}></span>
-                    <span className="font-medium">{cluster.name}</span>
-                  </div>
-                ))
+              {workloads.clusterConnected === true ? (
+                <div className="flex items-center p-3 rounded-lg border bg-success/10 text-success border-success/30">
+                  <span className="h-3 w-3 mr-3 rounded-full bg-success"></span>
+                  <span className="font-medium">Kubernetes Cluster Connected</span>
+                </div>
               ) : (
                 <div className="text-base-content/50 text-center py-4">No clusters connected</div>
               )}
+            </div>
+            <div className="mt-4">
+              <button 
+                onClick={fetchWorkloads}
+                className="btn btn-outline btn-sm w-full"
+                disabled={loading}
+              >
+                {loading ? 'Refreshing...' : 'Refresh Data'}
+              </button>
             </div>
           </div>
 
@@ -152,7 +173,7 @@ export default function Dashboard() {
 
           {/* Service Mesh Adapters */}
           <div className="xl:col-span-2 bg-base-100 shadow-md rounded-lg p-6 border border-base-300">
-            <h3 className="text-xl font-semibold mb-4 text-base-content">Service Mesh Adapters</h3>
+            <h3 className="text-xl font-semibold mb-4 text-base-content">Services Hosted</h3>
             <div className="max-h-60 overflow-y-auto">
               {Array.isArray(workloads.serviceNames) && workloads.serviceNames.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -172,7 +193,10 @@ export default function Dashboard() {
           <div className="bg-base-100 shadow-md rounded-lg p-6 border border-base-300">
             <h3 className="text-xl font-semibold mb-4 text-base-content">Performance Tools</h3>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-4 bg-warning/10 rounded-lg border border-warning/30 hover:bg-warning/20 transition-colors cursor-pointer">
+              <div 
+                className="flex items-center justify-between p-4 bg-warning/10 rounded-lg border border-warning/30 hover:bg-warning/20 transition-colors cursor-pointer"
+                onClick={handlePrometheusClick}
+              >
                 <div className="flex items-center">
                   <div className="w-8 h-8 bg-warning rounded-full flex items-center justify-center mr-3">
                     <span className="text-white font-bold text-sm">P</span>
@@ -181,7 +205,10 @@ export default function Dashboard() {
                 </div>
                 <FaPlus className="text-warning" />
               </div>
-              <div className="flex items-center justify-between p-4 bg-secondary/10 rounded-lg border border-secondary/30 hover:bg-secondary/20 transition-colors cursor-pointer">
+              <div 
+                className="flex items-center justify-between p-4 bg-secondary/10 rounded-lg border border-secondary/30 hover:bg-secondary/20 transition-colors cursor-pointer"
+                onClick={handleGrafanaClick}
+              >
                 <div className="flex items-center">
                   <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center mr-3">
                     <span className="text-white font-bold text-sm">G</span>

@@ -692,10 +692,17 @@ export default function Prometheus() {
                   <tr key={index}>
                     <td className="font-mono text-sm">{target.instance}</td>
                     <td>
-                      <div className="badge badge-outline">{target.job}</div>
+                      <div className="badge badge-outline badge-sm">{target.job}</div>
                     </td>
                     <td>
-                      <div className={`badge ${target.health === 'up' ? 'badge-success' : 'badge-error'}`}>
+                      <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        target.health === 'up' 
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                      }`}>
+                        <div className={`w-2 h-2 rounded-full mr-1.5 ${
+                          target.health === 'up' ? 'bg-green-400' : 'bg-red-400'
+                        }`}></div>
                         {target.health}
                       </div>
                     </td>
@@ -703,7 +710,7 @@ export default function Prometheus() {
                     <td>
                       <div className="flex gap-1 flex-wrap">
                         {Object.entries(target.labels || {}).slice(0, 2).map(([key, value]) => (
-                          <div key={key} className="badge badge-ghost text-xs">
+                          <div key={key} className="badge badge-ghost badge-sm text-xs">
                             {key}={value}
                           </div>
                         ))}
@@ -945,13 +952,13 @@ export default function Prometheus() {
           <div className="modal-box w-11/12 max-w-6xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg">Scrape Targets</h3>
-          <button 
+              <button 
                 className="btn btn-sm btn-circle"
                 onClick={() => setShowTargetsModal(false)}
-          >
+              >
                 <FaTimes />
-          </button>
-        </div>
+              </button>
+            </div>
 
             <div className="overflow-x-auto">
               <table className="table table-zebra w-full">
@@ -970,10 +977,17 @@ export default function Prometheus() {
                     <tr key={index}>
                       <td className="font-mono text-sm">{target.instance}</td>
                       <td>
-                        <div className="badge badge-outline">{target.job}</div>
+                        <div className="badge badge-outline badge-sm">{target.job}</div>
                       </td>
                       <td>
-                        <div className={`badge ${target.health === 'up' ? 'badge-success' : 'badge-error'}`}>
+                        <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          target.health === 'up' 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        }`}>
+                          <div className={`w-2 h-2 rounded-full mr-1.5 ${
+                            target.health === 'up' ? 'bg-green-400' : 'bg-red-400'
+                          }`}></div>
                           {target.health}
                         </div>
                       </td>
@@ -981,7 +995,7 @@ export default function Prometheus() {
                       <td>
                         <div className="flex gap-1 flex-wrap">
                           {Object.entries(target.labels || {}).map(([key, value]) => (
-                            <div key={key} className="badge badge-ghost text-xs">
+                            <div key={key} className="badge badge-ghost badge-sm text-xs">
                               {key}={value}
                             </div>
                           ))}
@@ -996,7 +1010,7 @@ export default function Prometheus() {
                   ))}
                 </tbody>
               </table>
-      </div>
+            </div>
 
             <div className="modal-action">
               <button 
